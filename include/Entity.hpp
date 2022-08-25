@@ -3,6 +3,22 @@
 
 #include <Util.hpp>
 
+// Axis-Aligned Bounding Box
+class AABB{
+    public:
+        float minX;
+        float minY;
+        float minZ;
+        float maxX;
+        float maxY;
+        float maxZ;
+
+        AABB();
+        AABB(float lowX, float lowY, float lowZ, float highX, float highY, float highZ);
+
+        AABB copy();
+};
+
 class Entity{
     public:
         glm::mat4 MVP = glm::mat4(1.0f);
@@ -14,13 +30,31 @@ class Entity{
         std::vector<glm::vec3> out_normals;
 
         GLuint vertexbuffer;
+        GLuint uvbuffer;
         GLuint normalbuffer;
 
+        GLuint textureID;
+
+        std::string _name;
+
+        glm::vec3 position;
+        glm::vec3 _scale;
+
+        bool isGrounded;
+
+        AABB collider;
+
         Entity();
-        Entity(const char* objFilepath, int program, glm::mat4 Model);
+        Entity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture);
         ~Entity();
 
+        void AABBFromVertices();
         void initialize();
+        AABB getGlobalAABB();
+        void translate(float x, float y, float z);
+        void scale(float s);
+        void scale(float x, float y, float z);
+        void update();
         void draw();
 };
 

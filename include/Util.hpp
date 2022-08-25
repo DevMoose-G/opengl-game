@@ -1,6 +1,7 @@
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
+#include <string>
 #include <vector>
 #include <gl/glew.h>
 #include <glm/glm.hpp>
