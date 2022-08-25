@@ -73,33 +73,37 @@ void Game::setPlayer(Entity* entity){
 
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
     CheckInputs(window, deltaTime);
+
+    Entity** sortedEntities = drawOrder();
     for(int i = 0; i < EntityCount; i++){
         // undo grounding
         for(int c = 0; c < EntityCount; c++){
-            entities[c].isGrounded = false;
+            sortedEntities[c]->isGrounded = false;
         }
 
         // check for collisions
         for(int j = 0; j < EntityCount; j++){
-            if( i == j || isGround(&entities[i]) ) continue;
+            if( i == j || isGround(sortedEntities[i]) ) continue;
 
             // else if colliding
-            else if(checkCollision(&entities[i], &entities[j])){
-                if( isGround(&entities[j]) ){
-                    entities[i].isGrounded = true;
+            else if(checkCollision(sortedEntities[i], sortedEntities[j])){
+                if( isGround(sortedEntities[j]) ){
+                    sortedEntities[i]->isGrounded = true;
                 }
             }
         }
 
         // GRAVITY
-        if((!entities[i].isGrounded ) && (!isGround(&entities[i]))){
-            entities[i].translate(0, gravity * deltaTime, 0);
+        if((!sortedEntities[i]->isGrounded ) && (!isGround(sortedEntities[i]))){
+            sortedEntities[i]->translate(0, gravity * deltaTime, 0);
         }
 
         // update the drawing of the entity
-        updateMVP(&(entities[i]));
-        entities[i].draw();
+        updateMVP(sortedEntities[i]);
+        sortedEntities[i]->draw();
     }
+    // frees the memoryAllocated for sorting the Entities
+    free(sortedEntities);
 }
 
 void Game::addGround(Entity* entity){
@@ -140,9 +144,31 @@ void Game::updateMVP(Entity* entity){
 
     // update all uniforms
     GLint MVP_Location = glGetUniformLocation(entity->programID, "MVP");
+    GLint Transparency_Location = glGetUniformLocation(entity->programID, "transparency");
     entity->MVP = View_Projection * entity->Model;
     glUniformMatrix4fv(MVP_Location, 1, 0, (float*)(&entity->MVP));
+    glUniform1f(Transparency_Location, entity->transparency);
+
     updateProjection();
+}
+
+// returns entities based on transparency if solid, display first
+Entity** Game::drawOrder(){
+    Entity** sortedEntities = (Entity**)malloc(sizeof(Entity*) * EntityCount);
+    int index = 0;
+    // have solid entities first
+    for(int i = 0; i < EntityCount; i++){
+        if(entities[i].transparency == 1){
+            sortedEntities[index++] = &entities[i];
+        }
+    }
+    // then transparent/translucent afterwards
+    for(int i = 0; i < EntityCount; i++){
+        if(entities[i].transparency != 1){
+            sortedEntities[index++] = &entities[i];
+        }
+    }
+    return sortedEntities;
 }
 
 Entity* Game::createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID){

@@ -40,6 +40,8 @@ class Entity{
         glm::vec3 position;
         glm::vec3 _scale;
 
+        float transparency = 1.0f;
+
         bool isGrounded;
 
         AABB collider;
@@ -54,6 +56,7 @@ class Entity{
         void translate(float x, float y, float z);
         void scale(float s);
         void scale(float x, float y, float z);
+        void setTransparency(float alpha);
         void update();
         void draw();
 };

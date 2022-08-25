@@ -96,6 +96,10 @@ void Entity::scale(float x, float y, float z){
     _scale = glm::vec3(x, y, z);
 }
 
+void Entity::setTransparency(float alpha){
+    transparency = alpha;
+}
+
 void Entity::update(){
     glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), _scale);
     Model = glm::translate(scaleMatrix, position);

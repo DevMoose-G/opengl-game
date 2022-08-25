@@ -9,7 +9,6 @@ enum Projection { PERSPECTIVE, ORTHO };
 
 class Game{
     private:
-        const static int MAX_ENTITIES = 256;
         glm::mat4 PerspectiveProjection;
         glm::mat4 OrthoProjection;
         glm::mat4 View;
@@ -17,6 +16,7 @@ class Game{
         Projection projection;
 
     public:
+        const static int MAX_ENTITIES = 256;
         glm::mat4 View_Projection;
         Inputs input;
 
@@ -46,6 +46,8 @@ class Game{
         void setPlayer(Entity* entity);
         void addGround(Entity* entity);
         bool isGround(Entity* entity);
+        // pointer pointing to array of pointers, listing the order of entities
+        Entity** drawOrder();
 
         void CheckInputs(GLFWwindow* window, float deltaTime);
         bool checkCollision(Entity* entity1, Entity* entity2);

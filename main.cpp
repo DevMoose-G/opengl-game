@@ -65,6 +65,10 @@ int main(){
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    //Transparency & blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     GLuint personTexture = loadDDS("./resources/texture.dds");
     GLuint crackedTexture = loadDDS("./resources/cracked-ground.dds");
 
@@ -76,6 +80,7 @@ int main(){
     person->scale(0.125f);
     game.setPlayer(person);
     game.addGround(ground);
+    ring->setTransparency(0.5f);
 
     // Temporary: find way to initialize vertexbuffer in the entity initialization
     glGenBuffers(1, &game.entities[0].vertexbuffer);
