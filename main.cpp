@@ -13,6 +13,35 @@ GLFWwindow* window;
 #include <Game.hpp>
 #include <Entity.hpp>
 
+// generates buffers for every entity and all colliderDisplays in game
+void GenBuffers(Game &game){
+    for(int i = 0; i < game.EntityCount; i++){
+        glGenBuffers(1, &game.entities[i].vertexbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i].vertexbuffer);
+        glBufferData(GL_ARRAY_BUFFER, game.entities[i].out_vertices.size()*sizeof(glm::vec3), &game.entities[i].out_vertices[0], GL_STATIC_DRAW);
+
+        glGenBuffers(1, &game.entities[i].normalbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i].normalbuffer);
+        glBufferData(GL_ARRAY_BUFFER, game.entities[i].out_normals.size()*sizeof(glm::vec3), &game.entities[i].out_normals[0], GL_STATIC_DRAW);
+    }
+
+    for(std::map<Entity*, AABBDisplay>::iterator pair = game.colliders.begin(); pair != game.colliders.end(); pair++){
+        printf("Making the colliderDisplay for %s\n", pair->first->_name.c_str());
+        glGenBuffers(1, &pair->second.vertexbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, pair->second.vertexbuffer);
+        glBufferData(GL_ARRAY_BUFFER, pair->second.out_vertices.size()*sizeof(glm::vec3), &pair->second.out_vertices[0], GL_STATIC_DRAW);
+
+        glGenBuffers(1, &pair->second.normalbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, pair->second.normalbuffer);
+        glBufferData(GL_ARRAY_BUFFER, pair->second.out_normals.size()*sizeof(glm::vec3), &pair->second.out_normals[0], GL_STATIC_DRAW);
+    
+        if(std::strcmp(pair->first->_name.c_str(), "Player") == 0){
+            //printf("\t{%f, %f, %f}", pair->second.out_vertices.size());
+            //printf("Number of vertices: %d\n", pair->second.out_vertices.size());
+        }
+    }
+}
+
 int main(){
 
     glm::vec3 position = glm::vec3(0, 0, 0);
@@ -54,6 +83,7 @@ int main(){
     glClearColor(0.0f, 0.15f, 0.3f, 0);
 
     GLuint ProgramID = LoadShaders("./shaders/vertex1.glsl", "./shaders/frag1.glsl");
+    GLuint ColliderProgramID = LoadShaders("./shaders/basicVertex.glsl", "./shaders/basicFrag.glsl");
 
     GLint MVP_Location = glGetUniformLocation(ProgramID, "MVP");
 
@@ -64,7 +94,7 @@ int main(){
     // ordering of displaying models (closer to camera will load in front)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
+    
     //Transparency & blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -73,8 +103,9 @@ int main(){
     GLuint crackedTexture = loadDDS("./resources/cracked-ground.dds");
 
     Game game;
-    Entity* person = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 3, 5), ProgramID, personTexture);
-    Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(2, 3, 5), ProgramID, personTexture);
+    Entity* person = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
+    Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 2, 0), ProgramID, personTexture);
+    Entity* cylinder = game.createEntity("Cylinder", "./resources/cylinder.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
     Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
 
     person->scale(0.125f);
@@ -82,30 +113,11 @@ int main(){
     game.addGround(ground);
     ring->setTransparency(0.5f);
 
+    game.createColliderDisplays(ColliderProgramID);
+
     // Temporary: find way to initialize vertexbuffer in the entity initialization
-    glGenBuffers(1, &game.entities[0].vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[0].vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[0].out_vertices.size()*sizeof(glm::vec3), &game.entities[0].out_vertices[0], GL_STATIC_DRAW);
-
-    glGenBuffers(1, &game.entities[0].normalbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[0].normalbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[0].out_normals.size()*sizeof(glm::vec3), &game.entities[0].out_normals[0], GL_STATIC_DRAW);
-
-    glGenBuffers(1, &game.entities[1].vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[1].vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[1].out_vertices.size()*sizeof(glm::vec3), &game.entities[1].out_vertices[0], GL_STATIC_DRAW);
-
-    glGenBuffers(1, &game.entities[1].normalbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[1].normalbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[1].out_normals.size()*sizeof(glm::vec3), &game.entities[1].out_normals[0], GL_STATIC_DRAW);
-
-    glGenBuffers(1, &game.entities[2].vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[2].vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[2].out_vertices.size()*sizeof(glm::vec3), &game.entities[2].out_vertices[0], GL_STATIC_DRAW);
-
-    glGenBuffers(1, &game.entities[2].normalbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, game.entities[2].normalbuffer);
-    glBufferData(GL_ARRAY_BUFFER, game.entities[2].out_normals.size()*sizeof(glm::vec3), &game.entities[2].out_normals[0], GL_STATIC_DRAW);
+    // Be the last thing game does before the loop
+    GenBuffers(game);
 
     float lastTime = glfwGetTime();
     float currentTime;

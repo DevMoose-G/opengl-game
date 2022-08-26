@@ -52,7 +52,6 @@ class Entity{
 
         void AABBFromVertices();
         void initialize();
-        AABB getGlobalAABB();
         void translate(float x, float y, float z);
         void scale(float s);
         void scale(float x, float y, float z);
@@ -60,5 +59,17 @@ class Entity{
         void update();
         void draw();
 };
+
+// shows the actual collision box
+class AABBDisplay: public Entity {
+    public:
+        Entity* entity;
+
+        AABBDisplay(Entity* entity, int programID, GLuint colliderTexture);
+
+        void gameLoop();
+};
+
+AABB getGlobalAABB(Entity* entity);
 
 #endif

@@ -21,32 +21,35 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
     if(player == NULL){
         fprintf(stderr, "Player is not set. No Movement is inputted.\n");
         View = glm::lookAt(
-            camPosition, // position 
+            camOffset, // position 
             glm::vec3(0), // direction
             glm::vec3(0, 1, 0) //up
         );
         return;
     } else {
+        glm::vec3 motion = glm::vec3(0.0f);
         // Player Movement
         if(glfwGetKey(window, this->input.MOVE_FORWARD) == GLFW_PRESS){
-            player->translate(0, 0, -MOVE_SPEED * deltaTime);
+            motion += glm::vec3(0, 0, -MOVE_SPEED * deltaTime);
         }
         if(glfwGetKey(window, this->input.MOVE_BACKWARD) == GLFW_PRESS){
-            player->translate(0, 0, MOVE_SPEED * deltaTime);
+            motion += glm::vec3(0, 0, MOVE_SPEED * deltaTime);
         }
         if(glfwGetKey(window, this->input.MOVE_LEFT) == GLFW_PRESS){
-            player->translate(-MOVE_SPEED * deltaTime, 0, 0);
+            motion += glm::vec3(-MOVE_SPEED * deltaTime, 0, 0);
         }
         if(glfwGetKey(window, this->input.MOVE_RIGHT) == GLFW_PRESS){
-            player->translate(MOVE_SPEED * deltaTime, 0, 0);
+            motion += glm::vec3(MOVE_SPEED * deltaTime, 0, 0);
         }
+        if(glm::length(motion) > 0){
+            motion = glm::normalize(motion) * MOVE_SPEED * deltaTime;
+        }
+        player->translate(motion.x, motion.y, motion.z);
     }
 
-    glm::vec3 direction = player->position - camPosition;
-
     View = glm::lookAt(
-        camPosition, // position 
-        glm::vec3(0), // direction
+        player->position + camOffset, // position 
+        player->position, // direction
         glm::vec3(0, 1, 0) //up
     );
 }
@@ -56,10 +59,8 @@ Game::Game(){
     horizontalAngle = 0.0f;
     verticalAngle = 0.0f;
 
-    camPosition = glm::vec3(-10, 5, 10);
-
     PerspectiveProjection = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 0.1f, 100.0f);
-    OrthoProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.001f, 100.0f);
+    OrthoProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -14.0f, 100.0f);
 
     // starts in ORTHO Projection
     projection = ORTHO;
@@ -104,6 +105,13 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     }
     // frees the memoryAllocated for sorting the Entities
     free(sortedEntities);
+
+    // now draw all the colliderDisplays if any
+    for(std::map<Entity*, AABBDisplay>::iterator pair=colliders.begin(); pair != colliders.end(); pair++){
+        pair->second.gameLoop();
+        updateMVP(&pair->second);
+        pair->second.draw();
+    }
 }
 
 void Game::addGround(Entity* entity){
@@ -152,6 +160,14 @@ void Game::updateMVP(Entity* entity){
     updateProjection();
 }
 
+// generate all the AABBDisplays needed
+void Game::createColliderDisplays(GLuint programID){
+    for(int i = 0; i < EntityCount; i++){
+        AABBDisplay colliderDisplay = AABBDisplay(&entities[i], programID, colliderTexture);
+        colliders.insert( std::pair<Entity*, AABBDisplay>(&entities[i], colliderDisplay) );
+    }
+}
+
 // returns entities based on transparency if solid, display first
 Entity** Game::drawOrder(){
     Entity** sortedEntities = (Entity**)malloc(sizeof(Entity*) * EntityCount);
@@ -168,6 +184,7 @@ Entity** Game::drawOrder(){
             sortedEntities[index++] = &entities[i];
         }
     }
+
     return sortedEntities;
 }
 
@@ -178,8 +195,8 @@ Entity* Game::createEntity(const char* name, const char* objFilepath, glm::vec3 
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 bool Game::checkCollision(Entity* entity1, Entity* entity2){
-    AABB collider1 = entity1->getGlobalAABB();
-    AABB collider2 = entity2->getGlobalAABB();
+    AABB collider1 = getGlobalAABB(entity1);
+    AABB collider2 = getGlobalAABB(entity2);
     return (collider1.minX <= collider2.maxX && collider1.maxX >= collider2.minX)
         && (collider1.minY <= collider2.maxY && collider1.maxY >= collider2.minY)
         && (collider1.minZ <= collider2.maxZ && collider1.maxZ >= collider2.minZ);

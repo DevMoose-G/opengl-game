@@ -4,6 +4,25 @@
 #include <Entity.hpp>
 #include <Util.hpp>
 
+AABB getGlobalAABB(Entity *entity){
+    AABB global_collider = entity->collider.copy();
+    global_collider.minX *= entity->_scale.x;
+    global_collider.minY *= entity->_scale.y;
+    global_collider.minZ *= entity->_scale.z;
+    global_collider.maxX *= entity->_scale.x;
+    global_collider.maxY *= entity->_scale.y;
+    global_collider.maxZ *= entity->_scale.z;
+
+    global_collider.minX += entity->position.x;
+    global_collider.minY += entity->position.y;
+    global_collider.minZ += entity->position.z;
+    global_collider.maxX += entity->position.x;
+    global_collider.maxY += entity->position.y;
+    global_collider.maxZ += entity->position.z;
+    
+    return global_collider;
+}
+
 AABB::AABB(float lowX, float lowY, float lowZ, float highX, float highY, float highZ){
     minX = lowX;
     minY = lowY;
@@ -32,7 +51,9 @@ Entity::Entity(const char* name, const char* objFilepath, glm::vec3 position, in
     this->position = position;
     programID = program;
 
-    loadOBJ(objFilepath, out_vertices, out_uvs, out_normals);
+    if(objFilepath != ""){
+        loadOBJ(objFilepath, out_vertices, out_uvs, out_normals);
+    }
     AABBFromVertices();
     initialize();
 }
@@ -71,17 +92,6 @@ void Entity::initialize(){
     glBufferData(GL_ARRAY_BUFFER, out_normals.size()*sizeof(glm::vec3), &out_normals[0], GL_STATIC_DRAW);
 }
 
-AABB Entity::getGlobalAABB(){
-    AABB global_collider = collider.copy();
-    global_collider.minX += position.x;
-    global_collider.minY += position.y;
-    global_collider.minZ += position.z;
-    global_collider.maxX += position.x;
-    global_collider.maxY += position.y;
-    global_collider.maxZ += position.z;
-    return global_collider;
-}
-
 void Entity::translate(float x, float y, float z){
     position.x += x;
     position.y += y;
@@ -101,8 +111,8 @@ void Entity::setTransparency(float alpha){
 }
 
 void Entity::update(){
-    glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), _scale);
-    Model = glm::translate(scaleMatrix, position);
+    glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), position);
+    Model = glm::scale(translateMatrix, _scale);
 }
 
 void Entity::draw(){
@@ -124,4 +134,25 @@ void Entity::draw(){
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
     glDrawArrays(GL_TRIANGLES, 0, out_vertices.size()*sizeof(glm::vec3));
+}
+
+AABBDisplay::AABBDisplay(Entity* entity, int programID, GLuint colliderTexture): Entity("AABBDisplay", "./resources/cube.obj", entity->position, programID, colliderTexture){
+    this->entity = entity;
+    AABB globalAABB = getGlobalAABB(entity);
+    this->scale(entity->collider.maxX-entity->collider.minX, entity->collider.maxY-entity->collider.minY, entity->collider.maxZ-entity->collider.minZ);
+    this->_scale *= entity->_scale;
+    this->_scale /= 2.0f;
+    this->_scale *= 1.01f; // bit bigger
+    this->transparency = 0.5f;
+}
+
+void AABBDisplay::gameLoop(){
+    // update vertices
+    this->scale(entity->collider.maxX-entity->collider.minX, entity->collider.maxY-entity->collider.minY, entity->collider.maxZ-entity->collider.minZ);
+    this->_scale *= entity->_scale;
+    this->_scale /= 2.0f;
+    this->_scale *= 1.01f; // bit bigger
+
+    // update position
+    position = entity->position;
 }
