@@ -41,6 +41,8 @@ class Game{
         GLuint colliderTexture = loadDDS("./resources/texture.dds");
         std::map<Entity*, AABBDisplay> colliders;
 
+        std::map<Entity*, Entity*> followingCreatures;
+
         Game();
 
         void gameLoop(GLFWwindow* window, float deltaTime);
@@ -49,6 +51,7 @@ class Game{
         void updateMVP(Entity* entity);
         Entity* createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
         void setPlayer(Entity* entity);
+        void setCreatureOwner(Entity* entity, Entity* creature);
         void addGround(Entity* entity);
         bool isGround(Entity* entity);
         void createColliderDisplays(GLuint programID);

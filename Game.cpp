@@ -72,27 +72,48 @@ void Game::setPlayer(Entity* entity){
     player = entity;
 }
 
+void Game::setCreatureOwner(Entity* entity, Entity* creature){
+    // creature then entity because key has to be unique
+    followingCreatures.insert( std::pair<Entity*, Entity*>(creature, entity) );
+}
+
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
     CheckInputs(window, deltaTime);
 
-    Entity** sortedEntities = drawOrder();
+    // undo grounding
+    for(int c = 0; c < EntityCount; c++){
+        entities[c].isGrounded = false;
+    }
     for(int i = 0; i < EntityCount; i++){
-        // undo grounding
-        for(int c = 0; c < EntityCount; c++){
-            sortedEntities[c]->isGrounded = false;
-        }
+        
 
         // check for collisions
         for(int j = 0; j < EntityCount; j++){
-            if( i == j || isGround(sortedEntities[i]) ) continue;
+            if( i == j || isGround(&entities[i]) ) continue;
 
             // else if colliding
-            else if(checkCollision(sortedEntities[i], sortedEntities[j])){
-                if( isGround(sortedEntities[j]) ){
-                    sortedEntities[i]->isGrounded = true;
+            else if(checkCollision(&entities[i], &entities[j])){
+                if( isGround(&entities[j]) ){
+                    entities[i].isGrounded = true;
                 }
             }
         }
+    }
+
+    // makes all followingCreatures go to entity that is follows
+    for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
+        glm::vec3 distance = pair->second->position - pair->first->position;
+        if(pair->first->isGrounded && glm::length(distance) > 1){
+            glm::vec3 motion = glm::normalize(distance);
+            motion.x *= deltaTime * MOVE_SPEED;
+            motion.y *= deltaTime * MOVE_SPEED;
+            motion.z *= deltaTime * MOVE_SPEED;
+            pair->first->translate(motion.x, motion.y, motion.z);
+        }
+    }
+
+    Entity** sortedEntities = drawOrder();
+    for(int i = 0; i < EntityCount; i++){
 
         // GRAVITY
         if((!sortedEntities[i]->isGrounded ) && (!isGround(sortedEntities[i]))){

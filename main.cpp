@@ -94,7 +94,7 @@ int main(){
     // ordering of displaying models (closer to camera will load in front)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    
+
     //Transparency & blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -103,17 +103,27 @@ int main(){
     GLuint crackedTexture = loadDDS("./resources/cracked-ground.dds");
 
     Game game;
-    Entity* person = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
+    Entity* player = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
+    //Entity* trainer1 = game.createEntity("Trainer1", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
     Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 2, 0), ProgramID, personTexture);
-    Entity* cylinder = game.createEntity("Cylinder", "./resources/cylinder.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
+    Entity* creature1 = game.createEntity("Creature1", "./resources/creatureOutline.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
+    Entity* creature2 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, -5), ProgramID, personTexture);
+    Entity* creature3 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, 5), ProgramID, personTexture);
     Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
 
-    person->scale(0.125f);
-    game.setPlayer(person);
+    player->scale(0.125f);
+    //trainer1->scale(0.125f);
+    creature1->scale(0.2f);
+    creature2->scale(0.2f);
+    creature3->scale(0.2f);
+    game.setPlayer(player);
     game.addGround(ground);
     ring->setTransparency(0.5f);
 
-    game.createColliderDisplays(ColliderProgramID);
+    game.setCreatureOwner(player, creature1);
+    game.setCreatureOwner(player, creature2);
+    game.setCreatureOwner(player, creature3);
+    //game.createColliderDisplays(ColliderProgramID);
 
     // Temporary: find way to initialize vertexbuffer in the entity initialization
     // Be the last thing game does before the loop
