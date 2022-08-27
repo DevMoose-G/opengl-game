@@ -45,6 +45,7 @@ class Entity{
         float transparency = 1.0f;
 
         bool isGrounded;
+        float weight = 1.0f;
 
         AABB collider;
 

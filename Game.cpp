@@ -313,17 +313,21 @@ void Game::resolveCollision(Entity* entity1, Entity* entity2, float deltaTime){
 
     } else {
 
+        float weightRatio = entity1->weight / entity2->weight;
+        glm::vec3 motion = (glm::length(entity1->motion) > glm::length(entity2->motion)) ? entity1->motion : entity1->motion;
+
         if(overlap.x < overlap.y && overlap.x < overlap.z){
-            entity1->translate(-entity1->motion.x, 0, 0);
-            entity2->translate(-entity2->motion.x, 0, 0);
-        }else if(overlap.y < overlap.x && overlap.y < overlap.z){
+            // flip the motion in the x axis
+            entity1->translate(-motion.x / weightRatio, 0, 0);
+            entity2->translate(-motion.x * weightRatio, 0, 0);
+        } else if(overlap.y < overlap.x && overlap.y < overlap.z){
             // flip the motion in the y axis
-            entity1->translate(0, -entity1->motion.y, 0);
-            entity2->translate(0, -entity2->motion.y, 0);
-        } else{
+            entity1->translate(0, -motion.y / weightRatio, 0);
+            entity2->translate(0, -motion.y * weightRatio, 0);
+        } else {
             // flip the motion in the z axis
-            entity1->translate(0, 0, -entity1->motion.z);
-            entity2->translate(0, 0, -entity2->motion.z);
+            entity1->translate(0, 0, -motion.z / weightRatio);
+            entity2->translate(0, 0, -motion.z * weightRatio);
         }
     }
 }

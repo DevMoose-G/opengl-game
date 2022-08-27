@@ -34,11 +34,6 @@ void GenBuffers(Game &game){
         glGenBuffers(1, &pair->second.normalbuffer);
         glBindBuffer(GL_ARRAY_BUFFER, pair->second.normalbuffer);
         glBufferData(GL_ARRAY_BUFFER, pair->second.out_normals.size()*sizeof(glm::vec3), &pair->second.out_normals[0], GL_STATIC_DRAW);
-    
-        if(std::strcmp(pair->first->_name.c_str(), "Player") == 0){
-            //printf("\t{%f, %f, %f}", pair->second.out_vertices.size());
-            //printf("Number of vertices: %d\n", pair->second.out_vertices.size());
-        }
     }
 }
 
@@ -104,26 +99,30 @@ int main(){
 
     Game game;
     Entity* player = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
-    //Entity* trainer1 = game.createEntity("Trainer1", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
-    Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 2, 0), ProgramID, personTexture);
+    Entity* trainer1 = game.createEntity("Trainer1", "./resources/person.obj", glm::vec3(2, 10, -7), ProgramID, personTexture);
+    Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 6, 0), ProgramID, personTexture);
     Entity* creature1 = game.createEntity("Creature1", "./resources/creatureOutline.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
     Entity* creature2 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, -5), ProgramID, personTexture);
     Entity* creature3 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, 5), ProgramID, personTexture);
     Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
 
     player->scale(0.125f);
+    player->weight = 10.0f;
+    ring->weight = 0.5f;
     ring->scale(0.4f);
+    trainer1->scale(0.125f);
     creature1->scale(0.2f);
     creature2->scale(0.2f);
     creature3->scale(0.2f);
     game.setPlayer(player);
     game.addGround(ground);
-    ring->setTransparency(0.5f);
+    // ring->setTransparency(0.5f);
 
     game.setCreatureOwner(player, creature1);
     game.setCreatureOwner(player, creature2);
-    game.setCreatureOwner(player, creature3);
-    //game.createColliderDisplays(ColliderProgramID);
+    game.setCreatureOwner(trainer1, creature3);
+
+    // game.createColliderDisplays(ColliderProgramID);
 
     // Be the last thing game does before the loop
     GenBuffers(game);
