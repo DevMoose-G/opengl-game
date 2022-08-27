@@ -28,6 +28,28 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
         );
         return;
     } else {
+        if(glfwGetKey(window, this->input.TOGGLE_CREATURE) == GLFW_PRESS){
+            if(input.TOGGLE_CREATURE_PRESSED) {}
+            else{
+                input.TOGGLE_CREATURE_PRESSED = true;
+                std::vector<Entity*> creatureOrder;
+                creatureOrder.push_back(player);
+                for(std::map<Entity*, Entity*>::iterator pair = followingCreatures.begin(); pair != followingCreatures.end(); pair++){
+                    if(pair->second == player){
+                        creatureOrder.push_back(pair->first);
+                    }
+                }
+
+                for(int i = 0; i < creatureOrder.size(); i++){
+                    if(creatureOrder[i] == controlled){
+                        if(i == creatureOrder.size() - 1) controlled = creatureOrder[0];
+                        else    controlled = creatureOrder[i+1];
+                        break;
+                    }
+                }
+            }
+        } else  input.TOGGLE_CREATURE_PRESSED = false;
+
         glm::vec3 motion = glm::vec3(0.0f);
         // Player Movement
         if(glfwGetKey(window, this->input.MOVE_FORWARD) == GLFW_PRESS){
@@ -45,12 +67,12 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
         if(glm::length(motion) > 0){
             motion = glm::normalize(motion) * MOVE_SPEED * deltaTime;
         }
-        player->motion += glm::vec3(motion.x, motion.y, motion.z);
+        controlled->motion += glm::vec3(motion.x, motion.y, motion.z);
     }
 
     View = glm::lookAt(
-        player->position + camOffset, // position 
-        player->position, // direction
+        controlled->position + camOffset, // position 
+        controlled->position, // direction
         glm::vec3(0, 1, 0) //up
     );
 }
@@ -70,7 +92,10 @@ Game::Game(){
 };
 
 void Game::setPlayer(Entity* entity){
-    player = entity;
+    if(player == NULL){
+        player = entity;
+    }
+    controlled = entity;
 }
 
 void Game::setCreatureOwner(Entity* entity, Entity* creature){
@@ -91,7 +116,7 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     // makes all followingCreatures go to entity that is follows
     for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
         glm::vec3 distance = pair->second->position - pair->first->position;
-        if(pair->first->isGrounded && glm::length(distance) > 1.35f){
+        if(pair->first->isGrounded && glm::length(distance) > 1.35f && pair->first != controlled){
             glm::vec3 motion = glm::normalize(distance);
             pair->first->motion.x = motion.x * deltaTime * MOVE_SPEED;
             pair->first->motion.y = motion.y * deltaTime * MOVE_SPEED;

@@ -24,6 +24,7 @@ class Game{
         Entity entities[MAX_ENTITIES];
         int EntityCount = 0;
         Entity* player = NULL;
+        Entity* controlled = NULL;
 
         Entity* ground[16];
         int GroundCount = 0;

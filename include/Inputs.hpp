@@ -11,6 +11,9 @@ class Inputs{
         int MOVE_LEFT = GLFW_KEY_A;
         int MOVE_FORWARD = GLFW_KEY_W;
         int MOVE_BACKWARD = GLFW_KEY_S;
+        int TOGGLE_CREATURE = GLFW_KEY_TAB;
+
+        bool TOGGLE_CREATURE_PRESSED = false;
 };
 
 #endif
