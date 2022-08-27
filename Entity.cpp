@@ -5,13 +5,7 @@
 #include <Util.hpp>
 
 AABB getGlobalAABB(Entity *entity){
-    AABB global_collider = entity->collider.copy();
-    global_collider.minX *= entity->_scale.x;
-    global_collider.minY *= entity->_scale.y;
-    global_collider.minZ *= entity->_scale.z;
-    global_collider.maxX *= entity->_scale.x;
-    global_collider.maxY *= entity->_scale.y;
-    global_collider.maxZ *= entity->_scale.z;
+    AABB global_collider = getScaledAABB(entity);
 
     global_collider.minX += entity->position.x;
     global_collider.minY += entity->position.y;
@@ -21,6 +15,17 @@ AABB getGlobalAABB(Entity *entity){
     global_collider.maxZ += entity->position.z;
     
     return global_collider;
+}
+
+AABB getScaledAABB(Entity *entity){
+    AABB scale_collider = entity->collider.copy();
+    scale_collider.minX *= entity->_scale.x;
+    scale_collider.minY *= entity->_scale.y;
+    scale_collider.minZ *= entity->_scale.z;
+    scale_collider.maxX *= entity->_scale.x;
+    scale_collider.maxY *= entity->_scale.y;
+    scale_collider.maxZ *= entity->_scale.z;
+    return scale_collider;
 }
 
 AABB::AABB(float lowX, float lowY, float lowZ, float highX, float highY, float highZ){
@@ -96,7 +101,14 @@ void Entity::translate(float x, float y, float z){
     position.x += x;
     position.y += y;
     position.z += z;
+    // no longer know if it is grounded
+    isGrounded = false;
 }
+
+void Entity::translate(glm::vec3 motion){
+    translate(motion.x, motion.y, motion.z);
+}
+
 
 void Entity::scale(float s){
     scale(s, s, s);

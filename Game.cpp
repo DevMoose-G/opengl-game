@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <stdio.h>
+#include <cmath>
 
 #include <Game.hpp>
 #include <shader.hpp>
@@ -44,7 +45,7 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
         if(glm::length(motion) > 0){
             motion = glm::normalize(motion) * MOVE_SPEED * deltaTime;
         }
-        player->translate(motion.x, motion.y, motion.z);
+        player->motion += glm::vec3(motion.x, motion.y, motion.z);
     }
 
     View = glm::lookAt(
@@ -78,21 +79,46 @@ void Game::setCreatureOwner(Entity* entity, Entity* creature){
 }
 
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
+
+    for(int i = 0; i < EntityCount; i++){
+        entities[i].motion = glm::vec3(0, 0, 0);
+    }
+
     CheckInputs(window, deltaTime);
 
-    // undo grounding
-    for(int c = 0; c < EntityCount; c++){
-        entities[c].isGrounded = false;
-    }
-    for(int i = 0; i < EntityCount; i++){
-        
+    /* first do motion */
 
+    // makes all followingCreatures go to entity that is follows
+    for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
+        glm::vec3 distance = pair->second->position - pair->first->position;
+        if(pair->first->isGrounded && glm::length(distance) > 1.35f){
+            glm::vec3 motion = glm::normalize(distance);
+            pair->first->motion.x = motion.x * deltaTime * MOVE_SPEED;
+            pair->first->motion.y = motion.y * deltaTime * MOVE_SPEED;
+            pair->first->motion.z = motion.z * deltaTime * MOVE_SPEED;
+        }
+    }
+
+    for(int i = 0; i < EntityCount; i++){
+        // GRAVITY
+        if((!entities[i].isGrounded ) && (!isGround(&entities[i]))){
+            entities[i].motion += glm::vec3(0, gravity * deltaTime, 0);
+        }
+    }
+
+    // actual movement after calculations
+    for(int i = 0; i < EntityCount; i++){
+        entities[i].translate(entities[i].motion.x, entities[i].motion.y, entities[i].motion.z);
+    }
+
+    /* then detect collisions & resolve them */
+    for(int i = 0; i < EntityCount; i++){
         // check for collisions
         for(int j = 0; j < EntityCount; j++){
             if( i == j || isGround(&entities[i]) ) continue;
-
             // else if colliding
             else if(checkCollision(&entities[i], &entities[j])){
+                resolveCollision(&entities[i], &entities[j], deltaTime);
                 if( isGround(&entities[j]) ){
                     entities[i].isGrounded = true;
                 }
@@ -100,33 +126,15 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
         }
     }
 
-    // makes all followingCreatures go to entity that is follows
-    for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
-        glm::vec3 distance = pair->second->position - pair->first->position;
-        if(pair->first->isGrounded && glm::length(distance) > 1){
-            glm::vec3 motion = glm::normalize(distance);
-            motion.x *= deltaTime * MOVE_SPEED;
-            motion.y *= deltaTime * MOVE_SPEED;
-            motion.z *= deltaTime * MOVE_SPEED;
-            pair->first->translate(motion.x, motion.y, motion.z);
-        }
-    }
-
+    /* draw */
     Entity** sortedEntities = drawOrder();
     for(int i = 0; i < EntityCount; i++){
-
-        // GRAVITY
-        if((!sortedEntities[i]->isGrounded ) && (!isGround(sortedEntities[i]))){
-            sortedEntities[i]->translate(0, gravity * deltaTime, 0);
-        }
-
         // update the drawing of the entity
         updateMVP(sortedEntities[i]);
         sortedEntities[i]->draw();
     }
     // frees the memoryAllocated for sorting the Entities
     free(sortedEntities);
-
     // now draw all the colliderDisplays if any
     for(std::map<Entity*, AABBDisplay>::iterator pair=colliders.begin(); pair != colliders.end(); pair++){
         pair->second.gameLoop();
@@ -221,4 +229,101 @@ bool Game::checkCollision(Entity* entity1, Entity* entity2){
     return (collider1.minX <= collider2.maxX && collider1.maxX >= collider2.minX)
         && (collider1.minY <= collider2.maxY && collider1.maxY >= collider2.minY)
         && (collider1.minZ <= collider2.maxZ && collider1.maxZ >= collider2.minZ);
+}
+
+void Game::resolveCollision(Entity* entity1, Entity* entity2, float deltaTime){
+
+    if(! checkCollision(entity1, entity2) )  return;
+
+    AABB collider1 = getScaledAABB(entity1);
+    AABB collider2 = getScaledAABB(entity2);
+
+    glm::vec3 distance = entity2->position - entity1->position;
+
+    Entity* ground = NULL;
+    // no collision b/w two grounds
+    if(isGround(entity1) && isGround(entity2))  return;
+    if(isGround(entity1))   ground = entity1;
+    if(isGround(entity2))   ground = entity2;
+
+    // figure out which side overlaps left or right
+    // (entity1.maxX-entity2.minX) or (entity2.maxX-entity1.minX)
+    float overlapX1 = (collider1.maxX - collider2.minX);
+    float overlapX2 = (collider2.maxX - collider1.minX);
+    // entity1 is left & entity2 is right
+    bool overlapXLeftRight = false;
+    if(overlapX1 > overlapX2){
+        overlapXLeftRight = true;
+    }
+
+    float overlapY1 = (collider1.maxY - collider2.minY);
+    float overlapY2 = (collider2.maxY - collider1.minY);
+    bool overlapYLeftRight = false;
+    if(overlapY1 > overlapY2){
+        overlapYLeftRight = true;
+    }
+
+    float overlapZ1 = (collider1.maxZ - collider2.minZ);
+    float overlapZ2 = (collider2.maxZ - collider1.minZ);
+    bool overlapZLeftRight = false;
+    if(overlapZ1 > overlapZ2){
+        overlapZLeftRight = true;
+    }
+
+    // the overlap is the value after these subtractions
+    if(overlapXLeftRight){
+        distance.x -= std::abs(collider1.maxX);
+        distance.x -= std::abs(collider2.minX);
+    } else {
+        distance.x -= std::abs(collider2.maxX);
+        distance.x -= std::abs(collider1.minX);
+    }
+    if(overlapYLeftRight){
+        distance.y -= std::abs(collider1.maxY);
+        distance.y -= std::abs(collider2.minY);
+    } else {
+        distance.y -= std::abs(collider2.maxY);
+        distance.y -= std::abs(collider1.minY);
+    }
+    if(overlapZLeftRight){
+        distance.z -= std::abs(collider1.maxZ);
+        distance.z -= std::abs(collider2.minZ);
+    } else {
+        distance.z -= std::abs(collider2.maxZ);
+        distance.z -= std::abs(collider1.minZ);
+    }
+    // essentially the absolute value of distance after aabb subtraction which is the amount of overlap in each axis
+    glm::vec3 overlap = glm::vec3(-distance.x, -distance.y, -distance.z);
+
+    // if ground collision, only move entity1
+    if(ground != NULL){
+        Entity* moveable = (ground != entity1) ? entity1 : entity2;
+
+        // finds the minimum path to become uncollided
+        if(overlap.x < overlap.y && overlap.x < overlap.z){
+            // flip the motion in the x axis
+            moveable->translate(-moveable->motion.x, 0, 0);
+        } else if(overlap.y < overlap.x && overlap.y < overlap.z){
+            // flip the motion in the y axis
+            moveable->translate(0, -moveable->motion.y, 0);
+        } else{
+            // flip the motion in the z axis
+            moveable->translate(0, 0, -moveable->motion.z);
+        }
+
+    } else {
+
+        if(overlap.x < overlap.y && overlap.x < overlap.z){
+            entity1->translate(-entity1->motion.x, 0, 0);
+            entity2->translate(-entity2->motion.x, 0, 0);
+        }else if(overlap.y < overlap.x && overlap.y < overlap.z){
+            // flip the motion in the y axis
+            entity1->translate(0, -entity1->motion.y, 0);
+            entity2->translate(0, -entity2->motion.y, 0);
+        } else{
+            // flip the motion in the z axis
+            entity1->translate(0, 0, -entity1->motion.z);
+            entity2->translate(0, 0, -entity2->motion.z);
+        }
+    }
 }

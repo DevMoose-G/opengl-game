@@ -40,6 +40,8 @@ class Entity{
         glm::vec3 position;
         glm::vec3 _scale;
 
+        glm::vec3 motion;
+
         float transparency = 1.0f;
 
         bool isGrounded;
@@ -53,6 +55,7 @@ class Entity{
         void AABBFromVertices();
         void initialize();
         void translate(float x, float y, float z);
+        void translate(glm::vec3 motion);
         void scale(float s);
         void scale(float x, float y, float z);
         void setTransparency(float alpha);
@@ -71,5 +74,6 @@ class AABBDisplay: public Entity {
 };
 
 AABB getGlobalAABB(Entity* entity);
+AABB getScaledAABB(Entity *entity);
 
 #endif

@@ -60,6 +60,7 @@ class Game{
 
         void CheckInputs(GLFWwindow* window, float deltaTime);
         bool checkCollision(Entity* entity1, Entity* entity2);
+        void resolveCollision(Entity* entity1, Entity* entity2, float deltaTime);
 };
 
 #endif

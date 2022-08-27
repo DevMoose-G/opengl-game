@@ -112,7 +112,7 @@ int main(){
     Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
 
     player->scale(0.125f);
-    //trainer1->scale(0.125f);
+    ring->scale(0.4f);
     creature1->scale(0.2f);
     creature2->scale(0.2f);
     creature3->scale(0.2f);
@@ -125,7 +125,6 @@ int main(){
     game.setCreatureOwner(player, creature3);
     //game.createColliderDisplays(ColliderProgramID);
 
-    // Temporary: find way to initialize vertexbuffer in the entity initialization
     // Be the last thing game does before the loop
     GenBuffers(game);
 
