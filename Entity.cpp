@@ -169,3 +169,8 @@ void AABBDisplay::gameLoop(){
     // update position
     position = entity->position;
 }
+
+Creature::Creature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture)
+    :Entity(name, objFilepath, position, program, texture){
+
+}

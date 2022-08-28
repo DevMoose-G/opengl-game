@@ -115,6 +115,11 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     // makes all followingCreatures go to entity that is follows
     for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
         glm::vec3 distance = pair->second->position - pair->first->position;
+        // teleport creature to player if too far away
+        if(glm::length(distance) > 25.0f){
+            glm::vec3 playerPos = pair->second->position;
+            pair->first->position = playerPos + glm::vec3(0, 1, 0);
+        }
         if(pair->first->isGrounded && glm::length(distance) > 1.35f && pair->first != controlled){
             glm::vec3 motion = glm::normalize(distance);
             pair->first->motion.x = motion.x * deltaTime * MOVE_SPEED;
@@ -250,6 +255,11 @@ Entity** Game::drawOrder(){
 
 Entity* Game::createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID){
     entities[EntityCount] = Entity(name, objFilepath, position, program, textureID);
+    return &entities[EntityCount++];
+}
+
+Entity* Game::createCreature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID){
+    entities[EntityCount] = Creature(name, objFilepath, position, program, textureID);
     return &entities[EntityCount++];
 }
 

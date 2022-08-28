@@ -79,4 +79,11 @@ class AABBDisplay: public Entity {
 AABB getGlobalAABB(Entity* entity);
 AABB getScaledAABB(Entity *entity);
 
+class Creature: public Entity{
+    public:
+        float health = 100;
+        Creature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture);
+
+};
+
 #endif

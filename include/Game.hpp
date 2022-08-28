@@ -51,6 +51,8 @@ class Game{
         void updateProjection();
         void updateMVP(Entity* entity);
         Entity* createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
+        Entity* createCreature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
+        
         void setPlayer(Entity* entity);
         void setCreatureOwner(Entity* entity, Entity* creature);
         void addGround(Entity* entity);
