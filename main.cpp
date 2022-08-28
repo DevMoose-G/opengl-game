@@ -98,29 +98,29 @@ int main(){
     GLuint crackedTexture = loadDDS("./resources/cracked-ground.dds");
 
     Game game;
-    Entity* player = game.createEntity("Player", "./resources/person.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
-    Entity* trainer1 = game.createEntity("Trainer1", "./resources/person.obj", glm::vec3(2, 10, -7), ProgramID, personTexture);
+    Entity* player = game.createEntity("Player", "./resources/trainer.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
+    Entity* trainer1 = game.createEntity("Trainer1", "./resources/trainer.obj", glm::vec3(2, 10, -7), ProgramID, personTexture);
     Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 6, 0), ProgramID, personTexture);
     Entity* creature1 = game.createEntity("Creature1", "./resources/creatureOutline.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
     Entity* creature2 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, -5), ProgramID, personTexture);
-    Entity* creature3 = game.createEntity("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, 5), ProgramID, personTexture);
     Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
 
-    player->scale(0.125f);
+    player->scale(0.05f);
     player->weight = 10.0f;
+    trainer1->weight = 8.0f;
     ring->weight = 0.5f;
     ring->scale(0.4f);
-    trainer1->scale(0.125f);
+    trainer1->scale(0.05f);
     creature1->scale(0.2f);
     creature2->scale(0.2f);
-    creature3->scale(0.2f);
+
     game.setPlayer(player);
+
+    ground->scale(2);
     game.addGround(ground);
-    // ring->setTransparency(0.5f);
 
     game.setCreatureOwner(player, creature1);
-    game.setCreatureOwner(player, creature2);
-    game.setCreatureOwner(trainer1, creature3);
+    game.setCreatureOwner(trainer1, creature2);
 
     // game.createColliderDisplays(ColliderProgramID);
 

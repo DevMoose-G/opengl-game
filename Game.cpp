@@ -9,7 +9,6 @@
 #include <Game.hpp>
 #include <shader.hpp>
 
-
 void Game::CheckInputs(GLFWwindow* window, float deltaTime){
     // Get mouse position
     int width = 0;
@@ -131,9 +130,16 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
         }
     }
 
-    // actual movement after calculations
+    // actual movement & rotation after calculations
     for(int i = 0; i < EntityCount; i++){
         entities[i].translate(entities[i].motion.x, entities[i].motion.y, entities[i].motion.z);
+
+        // only rotation in the x and z plane, so not vertical rotation
+        glm::vec2 flatMotion = glm::vec2(entities[i].motion.x, entities[i].motion.z);
+        if(glm::length(flatMotion) > 0.05f){
+            flatMotion = glm::normalize(flatMotion);
+            entities[i].rotation = std::atan2(flatMotion.x, flatMotion.y);
+        }
     }
 
     /* then detect collisions & resolve them */
@@ -339,20 +345,21 @@ void Game::resolveCollision(Entity* entity1, Entity* entity2, float deltaTime){
     } else {
 
         float weightRatio = entity1->weight / entity2->weight;
-        glm::vec3 motion = (glm::length(entity1->motion) > glm::length(entity2->motion)) ? entity1->motion : entity1->motion;
+        glm::vec3 motion1 = (glm::length(entity1->motion) > glm::length(entity2->motion)) ? entity1->motion : -entity2->motion;
+        glm::vec3 motion2 = (glm::length(entity1->motion) > glm::length(entity2->motion)) ? -entity1->motion : entity2->motion;
 
         if(overlap.x < overlap.y && overlap.x < overlap.z){
             // flip the motion in the x axis
-            entity1->translate(-motion.x / weightRatio, 0, 0);
-            entity2->translate(-motion.x * weightRatio, 0, 0);
+            entity1->translate(-motion1.x / weightRatio, 0, 0);
+            entity2->translate(-motion2.x * weightRatio, 0, 0);
         } else if(overlap.y < overlap.x && overlap.y < overlap.z){
             // flip the motion in the y axis
-            entity1->translate(0, -motion.y / weightRatio, 0);
-            entity2->translate(0, -motion.y * weightRatio, 0);
+            entity1->translate(0, -motion1.y / weightRatio, 0);
+            entity2->translate(0, -motion2.y * weightRatio, 0);
         } else {
             // flip the motion in the z axis
-            entity1->translate(0, 0, -motion.z / weightRatio);
-            entity2->translate(0, 0, -motion.z * weightRatio);
+            entity1->translate(0, 0, -motion1.z / weightRatio);
+            entity2->translate(0, 0, -motion2.z * weightRatio);
         }
     }
 }

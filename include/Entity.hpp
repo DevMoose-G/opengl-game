@@ -39,6 +39,8 @@ class Entity{
 
         glm::vec3 position;
         glm::vec3 _scale;
+        // rotation only around the y-axis
+        float rotation;
 
         glm::vec3 motion;
 

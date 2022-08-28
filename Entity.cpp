@@ -124,7 +124,8 @@ void Entity::setTransparency(float alpha){
 
 void Entity::update(){
     glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), position);
-    Model = glm::scale(translateMatrix, _scale);
+    glm::mat4 rotatedTranslate = glm::rotate(translateMatrix, rotation, glm::vec3(0, 1, 0));
+    Model = glm::scale(rotatedTranslate, _scale);
 }
 
 void Entity::draw(){
