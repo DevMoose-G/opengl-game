@@ -44,6 +44,13 @@ class Game{
 
         std::map<Entity*, Entity*> followingCreatures;
 
+        // text variables
+        unsigned int Text2DTextureID;
+        unsigned int Text2DVertexBufferID;
+        unsigned int Text2DUVBufferID;
+        unsigned int Text2DShaderID;
+        unsigned int Text2DUniformID;
+
         Game();
 
         void gameLoop(GLFWwindow* window, float deltaTime);
@@ -53,17 +60,23 @@ class Game{
         Entity* createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
         Entity* createCreature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
         
+        // creation/management of entities
         void setPlayer(Entity* entity);
         void setCreatureOwner(Entity* entity, Entity* creature);
         void addGround(Entity* entity);
         bool isGround(Entity* entity);
         void createColliderDisplays(GLuint programID);
-        // pointer pointing to array of pointers, listing the order of entities
-        Entity** drawOrder();
 
+        // game loop functions
         void CheckInputs(GLFWwindow* window, float deltaTime);
         bool checkCollision(Entity* entity1, Entity* entity2);
         void resolveCollision(Entity* entity1, Entity* entity2, float deltaTime);
+        // pointer pointing to array of pointers, listing the order of entities
+        Entity** drawOrder();
+
+        void initText2D(const char* texturePath);
+        void printText2D(const char* text, int x, int y, int size);
+        void cleanupText2D();
 };
 
 #endif

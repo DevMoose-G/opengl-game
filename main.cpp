@@ -124,6 +124,7 @@ int main(){
     game.setCreatureOwner(trainer1, creature2);
 
     // game.createColliderDisplays(ColliderProgramID);
+    game.initText2D("./resources/font-texture.dds");
 
     // Be the last thing game does before the loop
     GenBuffers(game);
@@ -143,6 +144,7 @@ int main(){
         game.gameLoop(window, deltaTime);
 
         glDisableVertexAttribArray(0);
+        game.printText2D("HELLO DOES THIS WORK", 10, 500, 20);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
