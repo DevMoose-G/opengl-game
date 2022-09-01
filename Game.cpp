@@ -30,13 +30,13 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
         if(glfwGetKey(window, this->input.TOGGLE_CREATURE) == GLFW_PRESS){
             if(input.TOGGLE_CREATURE_PRESSED) {}
             else{
+				// lets you cycle through your creatures
                 input.TOGGLE_CREATURE_PRESSED = true;
                 std::vector<Entity*> creatureOrder;
                 creatureOrder.push_back(player);
-                for(std::map<Entity*, Entity*>::iterator pair = followingCreatures.begin(); pair != followingCreatures.end(); pair++){
-                    if(pair->second == player){
-                        creatureOrder.push_back(pair->first);
-                    }
+				std::vector<Creature*> creaturesArray = ((Trainer*)player)->creatures;
+                for(int i = 0; i < creaturesArray.size(); i++){
+                   	creatureOrder.push_back(creaturesArray[i]);
                 }
 
                 for(int i = 0; i < creatureOrder.size(); i++){
@@ -47,7 +47,7 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
                     }
                 }
             }
-        } else  input.TOGGLE_CREATURE_PRESSED = false;
+        } else  input.TOGGLE_CREATURE_PRESSED = false; // detects when you release toggle
 
         glm::vec3 motion = glm::vec3(0.0f);
         // Player Movement
@@ -70,8 +70,8 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
     }
 
     View = glm::lookAt(
-        controlled->position + camOffset, // position 
-        controlled->position, // direction
+        player->position + camOffset, // position 
+        player->position, // direction
         glm::vec3(0, 1, 0) //up
     );
 }
@@ -97,15 +97,15 @@ void Game::setPlayer(Entity* entity){
     controlled = entity;
 }
 
-void Game::setCreatureOwner(Entity* entity, Entity* creature){
+void Game::setCreatureOwner(Trainer* entity, Creature* creature){
     // creature then entity because key has to be unique
-    followingCreatures.insert( std::pair<Entity*, Entity*>(creature, entity) );
+	entity->creatures.push_back(creature);
 }
 
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
 
     for(int i = 0; i < EntityCount; i++){
-        entities[i].motion = glm::vec3(0, 0, 0);
+        entities[i]->motion = glm::vec3(0, 0, 0);
     }
 
     CheckInputs(window, deltaTime);
@@ -113,37 +113,43 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     /* first do motion */
 
     // makes all followingCreatures go to entity that is follows
-    for(std::map<Entity*, Entity*>::iterator pair=followingCreatures.begin(); pair != followingCreatures.end(); pair++){
-        glm::vec3 distance = pair->second->position - pair->first->position;
-        // teleport creature to player if too far away
-        if(glm::length(distance) > 25.0f){
-            glm::vec3 playerPos = pair->second->position;
-            pair->first->position = playerPos + glm::vec3(0, 1, 0);
-        }
-        if(pair->first->isGrounded && glm::length(distance) > 1.35f && pair->first != controlled){
-            glm::vec3 motion = glm::normalize(distance);
-            pair->first->motion.x = motion.x * deltaTime * MOVE_SPEED;
-            pair->first->motion.y = motion.y * deltaTime * MOVE_SPEED;
-            pair->first->motion.z = motion.z * deltaTime * MOVE_SPEED;
-        }
-    }
+	for(int i = 0; i < EntityCount; i++){
+		if(strcmp(entities[i]->type.c_str(), "Trainer") == 0){
+			Trainer* trainer = (Trainer*)entities[i];
+			for(int j = 0; j < trainer->creatures.size(); j++){
+				Creature* creature = trainer->creatures[j];
+				glm::vec3 distance = trainer->position - creature->position;
+				// teleport creature to player if too far away
+				if(glm::length(distance) > 25.0f  && creature != controlled){
+					glm::vec3 playerPos = trainer->position;
+					creature->position = playerPos + glm::vec3(0, 1, 0);
+				}
+				if(creature->isGrounded && glm::length(distance) > 1.35f && creature != controlled){
+					glm::vec3 motion = glm::normalize(distance);
+					creature->motion.x = motion.x * deltaTime * MOVE_SPEED;
+					creature->motion.y = motion.y * deltaTime * MOVE_SPEED;
+					creature->motion.z = motion.z * deltaTime * MOVE_SPEED;
+				}
+			}
+		}
+	}
 
     for(int i = 0; i < EntityCount; i++){
         // GRAVITY
-        if((!entities[i].isGrounded ) && (!isGround(&entities[i]))){
-            entities[i].motion += glm::vec3(0, gravity * deltaTime, 0);
+        if((!entities[i]->isGrounded ) && (!isGround(entities[i]))){
+            entities[i]->motion += glm::vec3(0, gravity * deltaTime, 0);
         }
     }
 
     // actual movement & rotation after calculations
     for(int i = 0; i < EntityCount; i++){
-        entities[i].translate(entities[i].motion.x, entities[i].motion.y, entities[i].motion.z);
+        entities[i]->translate(entities[i]->motion.x, entities[i]->motion.y, entities[i]->motion.z);
 
         // only rotation in the x and z plane, so not vertical rotation
-        glm::vec2 flatMotion = glm::vec2(entities[i].motion.x, entities[i].motion.z);
+        glm::vec2 flatMotion = glm::vec2(entities[i]->motion.x, entities[i]->motion.z);
         if(glm::length(flatMotion) > 0.05f){
             flatMotion = glm::normalize(flatMotion);
-            entities[i].rotation = std::atan2(flatMotion.x, flatMotion.y);
+            entities[i]->rotation = std::atan2(flatMotion.x, flatMotion.y);
         }
     }
 
@@ -151,12 +157,12 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     for(int i = 0; i < EntityCount; i++){
         // check for collisions
         for(int j = 0; j < EntityCount; j++){
-            if( i == j || isGround(&entities[i]) ) continue;
+            if( i == j || isGround(entities[i]) ) continue;
             // else if colliding
-            else if(checkCollision(&entities[i], &entities[j])){
-                resolveCollision(&entities[i], &entities[j], deltaTime);
-                if( isGround(&entities[j]) ){
-                    entities[i].isGrounded = true;
+            else if(checkCollision(entities[i], entities[j])){
+                resolveCollision(entities[i], entities[j], deltaTime);
+                if( isGround(entities[j]) ){
+                    entities[i]->isGrounded = true;
                 }
             }
         }
@@ -228,8 +234,8 @@ void Game::updateMVP(Entity* entity){
 // generate all the AABBDisplays needed
 void Game::createColliderDisplays(GLuint programID){
     for(int i = 0; i < EntityCount; i++){
-        AABBDisplay colliderDisplay = AABBDisplay(&entities[i], programID, colliderTexture);
-        colliders.insert( std::pair<Entity*, AABBDisplay>(&entities[i], colliderDisplay) );
+        AABBDisplay colliderDisplay = AABBDisplay(entities[i], programID, colliderTexture);
+        colliders.insert( std::pair<Entity*, AABBDisplay>(entities[i], colliderDisplay) );
     }
 }
 
@@ -239,28 +245,22 @@ Entity** Game::drawOrder(){
     int index = 0;
     // have solid entities first
     for(int i = 0; i < EntityCount; i++){
-        if(entities[i].transparency == 1){
-            sortedEntities[index++] = &entities[i];
+        if(entities[i]->transparency == 1){
+            sortedEntities[index++] = entities[i];
         }
     }
     // then transparent/translucent afterwards
     for(int i = 0; i < EntityCount; i++){
-        if(entities[i].transparency != 1){
-            sortedEntities[index++] = &entities[i];
+        if(entities[i]->transparency != 1){
+            sortedEntities[index++] = entities[i];
         }
     }
 
     return sortedEntities;
 }
 
-Entity* Game::createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID){
-    entities[EntityCount] = Entity(name, objFilepath, position, program, textureID);
-    return &entities[EntityCount++];
-}
-
-Entity* Game::createCreature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID){
-    entities[EntityCount] = Creature(name, objFilepath, position, program, textureID);
-    return &entities[EntityCount++];
+void Game::addEntity(Entity* entity){
+    entities[EntityCount++] = entity;
 }
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
@@ -271,6 +271,7 @@ bool Game::checkCollision(Entity* entity1, Entity* entity2){
         && (collider1.minY <= collider2.maxY && collider1.maxY >= collider2.minY)
         && (collider1.minZ <= collider2.maxZ && collider1.maxZ >= collider2.minZ);
 }
+
 
 void Game::resolveCollision(Entity* entity1, Entity* entity2, float deltaTime){
 

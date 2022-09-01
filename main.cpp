@@ -16,13 +16,13 @@ GLFWwindow* window;
 // generates buffers for every entity and all colliderDisplays in game
 void GenBuffers(Game &game){
     for(int i = 0; i < game.EntityCount; i++){
-        glGenBuffers(1, &game.entities[i].vertexbuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i].vertexbuffer);
-        glBufferData(GL_ARRAY_BUFFER, game.entities[i].out_vertices.size()*sizeof(glm::vec3), &game.entities[i].out_vertices[0], GL_STATIC_DRAW);
+        glGenBuffers(1, &game.entities[i]->vertexbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i]->vertexbuffer);
+        glBufferData(GL_ARRAY_BUFFER, game.entities[i]->out_vertices.size()*sizeof(glm::vec3), &game.entities[i]->out_vertices[0], GL_STATIC_DRAW);
 
-        glGenBuffers(1, &game.entities[i].normalbuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i].normalbuffer);
-        glBufferData(GL_ARRAY_BUFFER, game.entities[i].out_normals.size()*sizeof(glm::vec3), &game.entities[i].out_normals[0], GL_STATIC_DRAW);
+        glGenBuffers(1, &game.entities[i]->normalbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, game.entities[i]->normalbuffer);
+        glBufferData(GL_ARRAY_BUFFER, game.entities[i]->out_normals.size()*sizeof(glm::vec3), &game.entities[i]->out_normals[0], GL_STATIC_DRAW);
     }
 
     for(std::map<Entity*, AABBDisplay>::iterator pair = game.colliders.begin(); pair != game.colliders.end(); pair++){
@@ -98,30 +98,36 @@ int main(){
     GLuint crackedTexture = loadDDS("./resources/cracked-ground.dds");
 
     Game game;
-    Entity* player = game.createEntity("Player", "./resources/trainer.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
-    Entity* trainer1 = game.createEntity("Trainer1", "./resources/trainer.obj", glm::vec3(2, 10, -7), ProgramID, personTexture);
-    Entity* ring = game.createEntity("Ring", "./resources/ring.obj", glm::vec3(1, 6, 0), ProgramID, personTexture);
-    Entity* ground = game.createEntity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
+    Trainer player = Trainer("Player", "./resources/trainer.obj", glm::vec3(2, 10, 2), ProgramID, personTexture);
+    Trainer trainer1 = Trainer("Trainer1", "./resources/trainer.obj", glm::vec3(2, 10, -7), ProgramID, personTexture);
+    Entity ring = Entity("Ring", "./resources/ring.obj", glm::vec3(1, 6, 0), ProgramID, personTexture);
+    Entity ground = Entity("Ground", "./resources/floor.obj", glm::vec3(0, -1.0f, 0), ProgramID, crackedTexture);
+	game.addEntity(&player);
+	game.addEntity(&trainer1);
+	game.addEntity(&ring);
+	game.addEntity(&ground);
 
-    Entity* creature1 = game.createCreature("Creature1", "./resources/creatureOutline.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
-    Entity* creature2 = game.createCreature("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, -5), ProgramID, personTexture);
+	Creature creature1 = Creature("Creature1", "./resources/creatureOutline.obj", glm::vec3(-5, 6, -5), ProgramID, personTexture);
+	Creature creature2 = Creature("Creature2", "./resources/creatureOutline.obj", glm::vec3(0, 6, -5), ProgramID, personTexture);
+	game.addEntity(&creature1);
+	game.addEntity(&creature2);
 
-    player->scale(0.05f);
-    player->weight = 10.0f;
-    trainer1->weight = 8.0f;
-    ring->weight = 0.5f;
-    ring->scale(0.4f);
-    trainer1->scale(0.05f);
-    creature1->scale(0.2f);
-    creature2->scale(0.2f);
+    player.scale(0.05f);
+    player.weight = 10.0f;
+    trainer1.weight = 8.0f;
+    ring.weight = 0.5f;
+    ring.scale(0.4f);
+    trainer1.scale(0.05f);
+    creature1.scale(0.2f);
+    creature2.scale(0.2f);
 
-    game.setPlayer(player);
+    game.setPlayer(&player);
 
-    ground->scale(2);
-    game.addGround(ground);
+    ground.scale(2);
+    game.addGround(&ground);
 
-    game.setCreatureOwner(player, creature1);
-    game.setCreatureOwner(trainer1, creature2);
+    game.setCreatureOwner(&player, &creature1);
+    game.setCreatureOwner(&trainer1, &creature2);
 
     // game.createColliderDisplays(ColliderProgramID);
     game.initText2D("./resources/font-texture.dds");
@@ -144,7 +150,7 @@ int main(){
         game.gameLoop(window, deltaTime);
 
         glDisableVertexAttribArray(0);
-        game.printText2D("HELLO DOES THIS WORK", 10, 500, 20);
+        // game.printText2D("HELLO DOES THIS WORK", 10, 500, 20);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

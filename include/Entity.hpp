@@ -21,6 +21,8 @@ class AABB{
 
 class Entity{
     public:
+        std::string type;
+
         glm::mat4 MVP = glm::mat4(1.0f);
         glm::mat4 Model = glm::mat4(1.0f);
         int programID = 0;
@@ -82,7 +84,17 @@ AABB getScaledAABB(Entity *entity);
 class Creature: public Entity{
     public:
         float health = 100;
+
         Creature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture);
+		
+		void gameLoop();
+};
+
+class Trainer: public Entity{
+	public:
+		std::vector<Creature*> creatures;
+
+        Trainer(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture);
 
 };
 

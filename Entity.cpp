@@ -172,5 +172,16 @@ void AABBDisplay::gameLoop(){
 
 Creature::Creature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture)
     :Entity(name, objFilepath, position, program, texture){
+	
+	this->type = "Creature";
+}
 
+void Creature::gameLoop(){
+	
+}
+
+Trainer::Trainer(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture)
+	:Entity(name, objFilepath, position, program, texture){
+	
+	this->type = "Trainer";
 }

@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 
 GLuint loadDDS(const char* imagepath);

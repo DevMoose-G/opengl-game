@@ -21,7 +21,7 @@ class Game{
         glm::mat4 View_Projection;
         Inputs input;
 
-        Entity entities[MAX_ENTITIES];
+        Entity* entities[MAX_ENTITIES];
         int EntityCount = 0;
         Entity* player = NULL;
         Entity* controlled = NULL;
@@ -42,8 +42,6 @@ class Game{
         GLuint colliderTexture = loadDDS("./resources/texture.dds");
         std::map<Entity*, AABBDisplay> colliders;
 
-        std::map<Entity*, Entity*> followingCreatures;
-
         // text variables
         unsigned int Text2DTextureID;
         unsigned int Text2DVertexBufferID;
@@ -51,18 +49,19 @@ class Game{
         unsigned int Text2DShaderID;
         unsigned int Text2DUniformID;
 
+		bool battleMode = false;
+
         Game();
 
         void gameLoop(GLFWwindow* window, float deltaTime);
         void toggleProjection();
         void updateProjection();
         void updateMVP(Entity* entity);
-        Entity* createEntity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
-        Entity* createCreature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint textureID);
+        void addEntity(Entity* entity);
         
         // creation/management of entities
         void setPlayer(Entity* entity);
-        void setCreatureOwner(Entity* entity, Entity* creature);
+        void setCreatureOwner(Trainer* entity, Creature* creature);
         void addGround(Entity* entity);
         bool isGround(Entity* entity);
         void createColliderDisplays(GLuint programID);
