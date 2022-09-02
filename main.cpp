@@ -112,6 +112,11 @@ int main(){
 	game.addEntity(&creature1);
 	game.addEntity(&creature2);
 
+	Telegraph temp = Telegraph("./resources/charge_telegraph.obj", glm::vec3(1, 6, 0), ColliderProgramID);
+	Telegraph temp2 = Telegraph("./resources/charge_telegraph.obj", glm::vec3(-3, 6, 4), ColliderProgramID);
+	// game.addEntity(&temp);
+	// game.addEntity(&temp2);
+
     player.scale(0.05f);
     player.weight = 10.0f;
     trainer1.weight = 8.0f;
@@ -133,7 +138,7 @@ int main(){
     game.initText2D("./resources/font-texture.dds");
 
     // Be the last thing game does before the loop
-    GenBuffers(game);
+    //GenBuffers(game);
 
     float lastTime = glfwGetTime();
     float currentTime;

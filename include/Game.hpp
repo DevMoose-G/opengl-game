@@ -2,6 +2,7 @@
 #define GAME_HPP
 
 #include <Inputs.hpp>
+#include <shader.hpp>
 #include <Entity.hpp>
 #include <Util.hpp>
 #include <map>
@@ -41,6 +42,7 @@ class Game{
         // colliders
         GLuint colliderTexture = loadDDS("./resources/texture.dds");
         std::map<Entity*, AABBDisplay> colliders;
+		GLuint telegraphProgram = LoadShaders("./shaders/basicVertex.glsl", "./shaders/basicFrag.glsl");
 
         // text variables
         unsigned int Text2DTextureID;
@@ -50,6 +52,9 @@ class Game{
         unsigned int Text2DUniformID;
 
 		bool battleMode = false;
+		Trainer* battleTrainer1;
+		Trainer* battleTrainer2;
+		glm::vec2 ArenaSize = glm::vec2(15.0f, 15.0f);
 
         Game();
 
@@ -58,6 +63,7 @@ class Game{
         void updateProjection();
         void updateMVP(Entity* entity);
         void addEntity(Entity* entity);
+		void removeEntity(Entity* entity);
         
         // creation/management of entities
         void setPlayer(Entity* entity);
@@ -72,6 +78,8 @@ class Game{
         void resolveCollision(Entity* entity1, Entity* entity2, float deltaTime);
         // pointer pointing to array of pointers, listing the order of entities
         Entity** drawOrder();
+
+		void switchPlayer();
 
         void initText2D(const char* texturePath);
         void printText2D(const char* text, int x, int y, int size);

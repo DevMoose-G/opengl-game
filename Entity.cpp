@@ -48,7 +48,7 @@ AABB AABB::copy(){
 Entity::Entity(){
 }
 
-Entity::Entity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture){
+Entity::Entity(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture=-1){
     this->_name = name;
     textureID = texture;
     Model = glm::translate(glm::mat4(1.0f), position);
@@ -129,7 +129,7 @@ void Entity::update(){
 }
 
 void Entity::draw(){
-    glBindTexture(GL_TEXTURE_2D, textureID);
+	if(textureID != -1)	glBindTexture(GL_TEXTURE_2D, textureID);
 
     glEnableVertexAttribArray(0);
 
@@ -177,7 +177,21 @@ Creature::Creature(const char* name, const char* objFilepath, glm::vec3 position
 }
 
 void Creature::gameLoop(){
-	
+	// if there is a telegraph
+	if(strcmp(currentTelegraph.type.c_str(), "Telegraph") == 0){
+		currentTelegraph.rotation = rotation - 3.14f/2.0f;
+		currentTelegraph.position = position;
+	}
+}
+
+Telegraph::Telegraph(){
+	this->type = "DeletedTelegraph";
+}
+
+Telegraph::Telegraph(const char* filepath, glm::vec3 position, int program): Entity("Telegraph", filepath, position, program){
+	this->type = "Telegraph";
+    this->transparency = 0.5f;
+	collisions = false;
 }
 
 Trainer::Trainer(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture)

@@ -2,6 +2,7 @@
 #define INPUTS_HPP
 
 #include <Game.hpp>
+#include <GLFW/glfw3.h>
 
 class Inputs{
     public:
@@ -12,6 +13,7 @@ class Inputs{
         int MOVE_FORWARD = GLFW_KEY_W;
         int MOVE_BACKWARD = GLFW_KEY_S;
         int TOGGLE_CREATURE = GLFW_KEY_TAB;
+		int CREATURE_ATTACK = GLFW_KEY_LEFT_SHIFT;
 
         bool TOGGLE_CREATURE_PRESSED = false;
 };

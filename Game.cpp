@@ -30,22 +30,8 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
         if(glfwGetKey(window, this->input.TOGGLE_CREATURE) == GLFW_PRESS){
             if(input.TOGGLE_CREATURE_PRESSED) {}
             else{
-				// lets you cycle through your creatures
-                input.TOGGLE_CREATURE_PRESSED = true;
-                std::vector<Entity*> creatureOrder;
-                creatureOrder.push_back(player);
-				std::vector<Creature*> creaturesArray = ((Trainer*)player)->creatures;
-                for(int i = 0; i < creaturesArray.size(); i++){
-                   	creatureOrder.push_back(creaturesArray[i]);
-                }
-
-                for(int i = 0; i < creatureOrder.size(); i++){
-                    if(creatureOrder[i] == controlled){
-                        if(i == creatureOrder.size() - 1) controlled = creatureOrder[0];
-                        else    controlled = creatureOrder[i+1];
-                        break;
-                    }
-                }
+				// toggles between different "players" (player & creatures)
+				switchPlayer();
             }
         } else  input.TOGGLE_CREATURE_PRESSED = false; // detects when you release toggle
 
@@ -70,10 +56,40 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
     }
 
     View = glm::lookAt(
-        player->position + camOffset, // position 
-        player->position, // direction
+        controlled->position + camOffset, // position 
+        controlled->position, // direction
         glm::vec3(0, 1, 0) //up
     );
+}
+
+void Game::switchPlayer(){
+	// lets you cycle through your creatures
+	input.TOGGLE_CREATURE_PRESSED = true;
+	std::vector<Entity*> creatureOrder;
+	
+	if(!battleMode){
+		// player can't move in battle mode
+		creatureOrder.push_back(player);
+	}
+
+	std::vector<Creature*> creaturesArray = ((Trainer*)player)->creatures;
+	for(int i = 0; i < creaturesArray.size(); i++){
+		creatureOrder.push_back(creaturesArray[i]);
+	}
+
+	bool switched = false;
+	for(int i = 0; i < creatureOrder.size(); i++){
+		if(creatureOrder[i] == controlled){
+			if(i == creatureOrder.size() - 1) controlled = creatureOrder[0];
+			else    controlled = creatureOrder[i+1];
+			switched = true;
+			break;
+		}
+	}
+	// in case controlled no longer exists in creatureOrder, you control the first creature
+	if(! switched){
+		controlled = creatureOrder[0];
+	}
 }
 
 Game::Game(){
@@ -104,39 +120,70 @@ void Game::setCreatureOwner(Trainer* entity, Creature* creature){
 
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
 
+	// resets all motion
     for(int i = 0; i < EntityCount; i++){
         entities[i]->motion = glm::vec3(0, 0, 0);
     }
 
     CheckInputs(window, deltaTime);
 
-    /* first do motion */
-
-    // makes all followingCreatures go to entity that is follows
+	// does all the game loops in each creature
 	for(int i = 0; i < EntityCount; i++){
-		if(strcmp(entities[i]->type.c_str(), "Trainer") == 0){
-			Trainer* trainer = (Trainer*)entities[i];
-			for(int j = 0; j < trainer->creatures.size(); j++){
-				Creature* creature = trainer->creatures[j];
-				glm::vec3 distance = trainer->position - creature->position;
-				// teleport creature to player if too far away
-				if(glm::length(distance) > 25.0f  && creature != controlled){
-					glm::vec3 playerPos = trainer->position;
-					creature->position = playerPos + glm::vec3(0, 1, 0);
-				}
-				if(creature->isGrounded && glm::length(distance) > 1.35f && creature != controlled){
-					glm::vec3 motion = glm::normalize(distance);
-					creature->motion.x = motion.x * deltaTime * MOVE_SPEED;
-					creature->motion.y = motion.y * deltaTime * MOVE_SPEED;
-					creature->motion.z = motion.z * deltaTime * MOVE_SPEED;
+		if(strcmp(entities[i]->type.c_str(), "Creature") == 0){
+			Creature* creature = (Creature*) entities[i];
+			creature->gameLoop();
+		}
+	}
+
+    /* first do motion */
+    
+	if(battleMode){
+		if(glfwGetKey(window, input.CREATURE_ATTACK) == GLFW_PRESS){
+			Creature* creature = (Creature*) controlled;
+			// creates a telegraph if not one already
+			if(strcmp(creature->currentTelegraph.type.c_str(), "Telegraph") != 0){
+				GLuint shaders = LoadShaders("./shaders/basicVertex.glsl", "./shaders/basicFrag.glsl");
+				creature->currentTelegraph = Telegraph("./resources/charge_telegraph.obj", creature->position, shaders);
+
+				addEntity(&creature->currentTelegraph);
+			}
+		} else if(glfwGetKey(window, input.CREATURE_ATTACK) == GLFW_RELEASE){
+			Creature* creature = (Creature*) controlled;
+			// deletes a telegraph if there is one
+			if(strcmp(creature->currentTelegraph.type.c_str(), "Telegraph") == 0){
+				removeEntity(&creature->currentTelegraph);
+				creature->currentTelegraph = Telegraph();
+			}
+		}
+	}
+	else {
+		// makes all followingCreatures go to entity that is follows
+		for(int i = 0; i < EntityCount; i++){
+			if(strcmp(entities[i]->type.c_str(), "Trainer") == 0){
+				Trainer* trainer = (Trainer*)entities[i];
+				for(int j = 0; j < trainer->creatures.size(); j++){
+					Creature* creature = trainer->creatures[j];
+					glm::vec3 distance = trainer->position - creature->position;
+					// teleport creature to player if too far away
+					if(glm::length(distance) > 25.0f  && creature != controlled){
+						glm::vec3 playerPos = trainer->position;
+						creature->position = playerPos + glm::vec3(0, 1, 0);
+					}
+					// else just move them closer
+					if(creature->isGrounded && glm::length(distance) > 1.35f && creature != controlled){
+						glm::vec3 motion = glm::normalize(distance);
+						creature->motion.x = motion.x * deltaTime * MOVE_SPEED;
+						creature->motion.y = motion.y * deltaTime * MOVE_SPEED;
+						creature->motion.z = motion.z * deltaTime * MOVE_SPEED;
+					}
 				}
 			}
 		}
 	}
 
     for(int i = 0; i < EntityCount; i++){
-        // GRAVITY
-        if((!entities[i]->isGrounded ) && (!isGround(entities[i]))){
+        // GRAVITY (only if not grounded and you are not ground and you are colliding)
+        if((!entities[i]->isGrounded ) && (!isGround(entities[i])) && entities[i]->collisions){
             entities[i]->motion += glm::vec3(0, gravity * deltaTime, 0);
         }
     }
@@ -158,12 +205,35 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
         // check for collisions
         for(int j = 0; j < EntityCount; j++){
             if( i == j || isGround(entities[i]) ) continue;
+
             // else if colliding
             else if(checkCollision(entities[i], entities[j])){
                 resolveCollision(entities[i], entities[j], deltaTime);
                 if( isGround(entities[j]) ){
                     entities[i]->isGrounded = true;
                 }
+
+				// check if they are two trainers colliding
+				if( strcmp(entities[i]->type.c_str(), "Trainer") == 0 
+					&& strcmp(entities[j]->type.c_str(), "Trainer") == 0){
+					
+					battleMode = true;
+					if(entities[i] == player){
+						battleTrainer1 = (Trainer*)entities[i];
+						battleTrainer2 = (Trainer*)entities[j];
+					} else if(entities[j] == player){
+						battleTrainer1 = (Trainer*)entities[j];
+						battleTrainer2 = (Trainer*)entities[i];
+					}
+					else	fprintf(stderr, "Haven't coded how to deal with non-player battles.\n");
+					
+					switchPlayer();
+					glm::vec3 centerPos = entities[i]->position + entities[j]->position;
+					centerPos /= 2; // midpoint b/w trainers
+					entities[i]->position = centerPos + glm::vec3(ArenaSize.x/2, 0, ArenaSize.y/2);
+					entities[j]->position = centerPos - glm::vec3(ArenaSize.x/2, 0, ArenaSize.y/2);
+					printf("Battle mode engaged.\n");
+				}
             }
         }
     }
@@ -259,12 +329,46 @@ Entity** Game::drawOrder(){
     return sortedEntities;
 }
 
+void Game::removeEntity(Entity* entity){
+	glDeleteBuffers(1, &entity->vertexbuffer);
+	glDeleteBuffers(1, &entity->normalbuffer);
+	for(int i = 0; i < EntityCount; i++){
+		if(entities[i] == entity){
+			// move the last entity to this spot and reduce EntityCount
+			entities[i] = entities[EntityCount - 1];
+			entities[EntityCount - 1] = nullptr;
+			EntityCount--;
+		}
+	}
+}
+
 void Game::addEntity(Entity* entity){
+	// creates the vertex buffers for the entity
+	glGenBuffers(1, &entity->vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, entity->vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, entity->out_vertices.size()*sizeof(glm::vec3), &entity->out_vertices[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &entity->normalbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, entity->normalbuffer);
+	glBufferData(GL_ARRAY_BUFFER, entity->out_normals.size()*sizeof(glm::vec3), &entity->out_normals[0], GL_STATIC_DRAW);
+
+	// the collision displays
+	// glGenBuffers(1, &pair->second.vertexbuffer);
+	// glBindBuffer(GL_ARRAY_BUFFER, pair->second.vertexbuffer);
+	// glBufferData(GL_ARRAY_BUFFER, pair->second.out_vertices.size()*sizeof(glm::vec3), &pair->second.out_vertices[0], GL_STATIC_DRAW);
+
+	// glGenBuffers(1, &pair->second.normalbuffer);
+	// glBindBuffer(GL_ARRAY_BUFFER, pair->second.normalbuffer);
+	// glBufferData(GL_ARRAY_BUFFER, pair->second.out_normals.size()*sizeof(glm::vec3), &pair->second.out_normals[0], GL_STATIC_DRAW);
+
     entities[EntityCount++] = entity;
 }
 
 // https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
 bool Game::checkCollision(Entity* entity1, Entity* entity2){
+	if(!entity1->collisions || !entity2->collisions){
+		return false;
+	}
     AABB collider1 = getGlobalAABB(entity1);
     AABB collider2 = getGlobalAABB(entity2);
     return (collider1.minX <= collider2.maxX && collider1.maxX >= collider2.minX)
