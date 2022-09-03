@@ -51,10 +51,12 @@ class Game{
         unsigned int Text2DShaderID;
         unsigned int Text2DUniformID;
 
+		// battle variables
 		bool battleMode = false;
 		Trainer* battleTrainer1;
 		Trainer* battleTrainer2;
 		glm::vec2 ArenaSize = glm::vec2(15.0f, 15.0f);
+		std::map<Creature*, float> creatureQueue;
 
         Game();
 
@@ -79,11 +81,17 @@ class Game{
         // pointer pointing to array of pointers, listing the order of entities
         Entity** drawOrder();
 
+		// battle functions
+		void computeCreatureQueue();
+
 		void switchPlayer();
 
         void initText2D(const char* texturePath);
         void printText2D(const char* text, int x, int y, int size);
         void cleanupText2D();
 };
+
+void creatureGameLoop(Game* game, Creature* creature, float deltaTime);
+
 
 #endif

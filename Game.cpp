@@ -125,18 +125,14 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
         entities[i]->motion = glm::vec3(0, 0, 0);
     }
 
-    CheckInputs(window, deltaTime);
-
-	// does all the game loops in each creature
-	for(int i = 0; i < EntityCount; i++){
-		if(strcmp(entities[i]->type.c_str(), "Creature") == 0){
-			Creature* creature = (Creature*) entities[i];
-			creature->gameLoop();
-		}
+	// determines whose turn it is if in battle
+	if(battleMode){
+		
 	}
 
+    CheckInputs(window, deltaTime);
+
     /* first do motion */
-    
 	if(battleMode){
 		if(glfwGetKey(window, input.CREATURE_ATTACK) == GLFW_PRESS){
 			Creature* creature = (Creature*) controlled;
@@ -149,10 +145,16 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
 			}
 		} else if(glfwGetKey(window, input.CREATURE_ATTACK) == GLFW_RELEASE){
 			Creature* creature = (Creature*) controlled;
-			// deletes a telegraph if there is one
+			// deletes a telegraph if there is one & creates the activeMove
 			if(strcmp(creature->currentTelegraph.type.c_str(), "Telegraph") == 0){
 				removeEntity(&creature->currentTelegraph);
 				creature->currentTelegraph = Telegraph();
+				creature->move1.reset();
+
+				float rot = creature->rotation;
+				glm::vec3 direction = glm::vec3(8*sin(rot), 0, 8*cos(rot));
+				creature->move1.finalPos = creature->position+direction;
+				creature->activeMove = &creature->move1;
 			}
 		}
 	}
@@ -187,6 +189,14 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
             entities[i]->motion += glm::vec3(0, gravity * deltaTime, 0);
         }
     }
+
+	// does all the game loops in each creature
+	for(int i = 0; i < EntityCount; i++){
+		if(strcmp(entities[i]->type.c_str(), "Creature") == 0){
+			Creature* creature = (Creature*) entities[i];
+			creatureGameLoop(this, creature, deltaTime);
+		}
+	}
 
     // actual movement & rotation after calculations
     for(int i = 0; i < EntityCount; i++){
@@ -253,6 +263,54 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
         updateMVP(&pair->second);
         pair->second.draw();
     }
+}
+
+void Game::computeCreatureQueue(){
+	
+}
+
+void creatureGameLoop(Game* game, Creature* creature, float deltaTime){
+	// checks if dead
+	if(creature->health <= 0){
+		game->removeEntity(creature);
+	}
+
+	// if there is a telegraph
+	if(strcmp(creature->currentTelegraph.type.c_str(), "Telegraph") == 0){
+		creature->currentTelegraph.rotation = creature->rotation - 3.14f/2.0f;
+		creature->currentTelegraph.position = creature->position;
+	}
+
+	// does move attack if it is active
+	if(creature->activeMove != nullptr){
+		glm::vec3 difference = creature->activeMove->finalPos - creature->position;
+		float distance = glm::length(difference);
+		if(distance > 0.1f){
+			// checks for all collisions
+			for(int i = 0; i < game->EntityCount; i++){
+				// checks if thing was already hit by move
+				bool alreadyHit = false;
+				for(int j = 0; j < creature->activeMove->alreadyHit.size(); j++){
+					// checks if entity's name matches one that was already hit
+					if(strcmp(creature->activeMove->alreadyHit[j]->_name.c_str(), game->entities[i]->_name.c_str()) == 0){
+						alreadyHit = true;
+					}
+				}
+				if(alreadyHit)	continue;
+
+				// if creature that was not already hit, then reduce health
+				if(strcmp(game->entities[i]->type.c_str(), "Creature") == 0 && game->entities[i] != creature){
+					Creature* attacked = (Creature*) game->entities[i];
+					attacked->health -= creature->activeMove->damage;
+					creature->activeMove->alreadyHit.push_back(attacked);
+				}
+			}
+
+			// moves
+			glm::vec3 direction = glm::normalize(difference);
+			creature->motion = direction * creature->activeMove->movementSpeed * deltaTime;
+		} else	creature->activeMove = nullptr;
+	}
 }
 
 void Game::addGround(Entity* entity){

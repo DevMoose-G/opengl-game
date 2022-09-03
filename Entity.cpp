@@ -176,12 +176,50 @@ Creature::Creature(const char* name, const char* objFilepath, glm::vec3 position
 	this->type = "Creature";
 }
 
-void Creature::gameLoop(){
-	// if there is a telegraph
-	if(strcmp(currentTelegraph.type.c_str(), "Telegraph") == 0){
-		currentTelegraph.rotation = rotation - 3.14f/2.0f;
-		currentTelegraph.position = position;
-	}
+void Creature::gameLoop(float deltaTime){
+	// // checks if dead
+	// if(health <= 0){
+	// 	game->removeEntity(this);
+	// }
+
+	// // if there is a telegraph
+	// if(strcmp(currentTelegraph.type.c_str(), "Telegraph") == 0){
+	// 	currentTelegraph.rotation = rotation - 3.14f/2.0f;
+	// 	currentTelegraph.position = position;
+	// }
+
+	// // does move attack if it is active
+	// if(activeMove != nullptr){
+	// 	glm::vec3 difference = activeMove->finalPos - position;
+	// 	float distance = glm::length(difference);
+	// 	printf("%f\n", distance);
+	// 	if(distance > 0.1f){
+	// 		// checks for all collisions
+	// 		for(int i = 0; i < game->EntityCount; i++){
+	// 			if(strcmp(game->entities[i]->type.c_str(), "Creature") == 0 && game->entities[i] != this){
+	// 				Creature* attacked = (Creature*) game->entities[i];
+	// 				attacked->health -= activeMove->damage;
+	// 			}
+	// 		}
+
+	// 		// moves
+	// 		glm::vec3 direction = glm::normalize(difference);
+	// 		motion = direction * activeMove->movementSpeed * deltaTime;
+	// 	} else	activeMove = nullptr;
+	// }
+}
+
+Move::Move(){}
+
+Move::Move(glm::vec3 finalPos, float speed, float damage){
+	this->finalPos = finalPos;
+	this->movementSpeed = speed;
+	this->damage = damage;
+}
+
+void Move::reset(){
+	this->finalPos = glm::vec3(0);
+	this->alreadyHit.clear();
 }
 
 Telegraph::Telegraph(){

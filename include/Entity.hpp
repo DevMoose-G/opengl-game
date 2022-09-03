@@ -89,9 +89,24 @@ class Telegraph: public Entity{
 		Telegraph(const char* filepath, glm::vec3 position, int program);
 };
 
+class Move{
+	public:
+		glm::vec3 finalPos;
+		float movementSpeed;
+		float damage;
+		std::vector<Entity*> alreadyHit; // list of those already hit by current move
+
+		Move();
+		Move(glm::vec3 finalPos, float speed, float damage);
+
+		// resets variables alreadyHit and finalPos
+		void reset();
+};
+
 class Creature: public Entity{
     public:
         float health = 100;
+		float speed = 1.0f;
 
 		// as soon as this key is let go, creature is in attackMode
 		bool attackPressed = false;
@@ -99,10 +114,13 @@ class Creature: public Entity{
 		float attackRange = -1;
 
 		Telegraph currentTelegraph;
+		
+		Move move1 = Move(glm::vec3(0.0f), 17.5f, 50.0f);
+		Move* activeMove = nullptr;
 
         Creature(const char* name, const char* objFilepath, glm::vec3 position, int program, GLuint texture);
 		
-		void gameLoop();
+		void gameLoop(float deltaTime);
 };
 
 class Trainer: public Entity{
