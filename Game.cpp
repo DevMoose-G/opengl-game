@@ -62,6 +62,38 @@ void Game::CheckInputs(GLFWwindow* window, float deltaTime){
     );
 }
 
+void Game::BattleInput(GLFWwindow* window, float deltaTime){
+
+	// if you are not trainer, you can't move or toggle creatures
+	if(activeTrainer != player)	return;
+	if(glfwGetKey(window, this->input.TOGGLE_CREATURE) == GLFW_PRESS){
+		if(input.TOGGLE_CREATURE_PRESSED) {}
+		else{
+			// toggles between different "players" (player & creatures)
+			switchPlayer();
+		}
+	} else  input.TOGGLE_CREATURE_PRESSED = false; // detects when you release toggle
+
+	glm::vec3 motion = glm::vec3(0.0f);
+	// Player Movement
+	if(glfwGetKey(window, this->input.MOVE_FORWARD) == GLFW_PRESS){
+		motion += glm::vec3(0, 0, -MOVE_SPEED * deltaTime);
+	}
+	if(glfwGetKey(window, this->input.MOVE_BACKWARD) == GLFW_PRESS){
+		motion += glm::vec3(0, 0, MOVE_SPEED * deltaTime);
+	}
+	if(glfwGetKey(window, this->input.MOVE_LEFT) == GLFW_PRESS){
+		motion += glm::vec3(-MOVE_SPEED * deltaTime, 0, 0);
+	}
+	if(glfwGetKey(window, this->input.MOVE_RIGHT) == GLFW_PRESS){
+		motion += glm::vec3(MOVE_SPEED * deltaTime, 0, 0);
+	}
+	if(glm::length(motion) > 0){
+		motion = glm::normalize(motion) * MOVE_SPEED * deltaTime;
+	}
+	controlled->motion += glm::vec3(motion.x, motion.y, motion.z);
+}
+
 void Game::switchPlayer(){
 	// lets you cycle through your creatures
 	input.TOGGLE_CREATURE_PRESSED = true;
@@ -106,16 +138,25 @@ Game::Game(){
 
 };
 
-void Game::setPlayer(Entity* entity){
+void Game::setPlayer(Trainer* trainer){
     if(player == NULL){
-        player = entity;
+        player = trainer;
     }
-    controlled = entity;
+    controlled = trainer;
 }
 
 void Game::setCreatureOwner(Trainer* entity, Creature* creature){
     // creature then entity because key has to be unique
 	entity->creatures.push_back(creature);
+}
+
+void Game::nextTurn(){
+	if(activeTrainer == battleTrainer1)	activeTrainer = battleTrainer2;
+	else								activeTrainer = battleTrainer1;
+
+	// check if end of game, (ADD SOON)
+	bool trainer1Out = false;
+	bool trainer2Out = false;
 }
 
 void Game::gameLoop(GLFWwindow* window, float deltaTime){
@@ -127,10 +168,14 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
 
 	// determines whose turn it is if in battle
 	if(battleMode){
-		
+		if(activeTrainer != player){
+			printf("Trainer forfeits their turn.\n");
+			nextTurn();
+		}
+		BattleInput(window, deltaTime);
+	} else {
+    	CheckInputs(window, deltaTime);
 	}
-
-    CheckInputs(window, deltaTime);
 
     /* first do motion */
 	if(battleMode){
@@ -184,7 +229,7 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
 	}
 
     for(int i = 0; i < EntityCount; i++){
-        // GRAVITY (only if not grounded and you are not ground and you are colliding)
+        // GRAVITY (only if not grounded and you are not ground and you have collisions on)
         if((!entities[i]->isGrounded ) && (!isGround(entities[i])) && entities[i]->collisions){
             entities[i]->motion += glm::vec3(0, gravity * deltaTime, 0);
         }
@@ -265,10 +310,6 @@ void Game::gameLoop(GLFWwindow* window, float deltaTime){
     }
 }
 
-void Game::computeCreatureQueue(){
-	
-}
-
 void creatureGameLoop(Game* game, Creature* creature, float deltaTime){
 	// checks if dead
 	if(creature->health <= 0){
@@ -309,7 +350,10 @@ void creatureGameLoop(Game* game, Creature* creature, float deltaTime){
 			// moves
 			glm::vec3 direction = glm::normalize(difference);
 			creature->motion = direction * creature->activeMove->movementSpeed * deltaTime;
-		} else	creature->activeMove = nullptr;
+		} else	{
+			creature->activeMove = nullptr;
+			game->nextTurn();
+		}
 	}
 }
 

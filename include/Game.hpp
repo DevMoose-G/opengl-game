@@ -24,7 +24,7 @@ class Game{
 
         Entity* entities[MAX_ENTITIES];
         int EntityCount = 0;
-        Entity* player = NULL;
+        Trainer* player = NULL;
         Entity* controlled = NULL;
 
         Entity* ground[16];
@@ -56,7 +56,7 @@ class Game{
 		Trainer* battleTrainer1;
 		Trainer* battleTrainer2;
 		glm::vec2 ArenaSize = glm::vec2(15.0f, 15.0f);
-		std::map<Creature*, float> creatureQueue;
+		Trainer* activeTrainer = nullptr;
 
         Game();
 
@@ -68,7 +68,7 @@ class Game{
 		void removeEntity(Entity* entity);
         
         // creation/management of entities
-        void setPlayer(Entity* entity);
+        void setPlayer(Trainer* trainer);
         void setCreatureOwner(Trainer* entity, Creature* creature);
         void addGround(Entity* entity);
         bool isGround(Entity* entity);
@@ -82,7 +82,8 @@ class Game{
         Entity** drawOrder();
 
 		// battle functions
-		void computeCreatureQueue();
+		void BattleInput(GLFWwindow* window, float deltaTime);
+		void nextTurn();
 
 		void switchPlayer();
 
